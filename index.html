@@ -49,7 +49,7 @@
     <header class="bg-white shadow-md sticky top-0 z-50">
         <nav class="container mx-auto px-6 py-3 flex justify-between items-center">
             <a href="#/home" class="flex items-center">
-                <img src="https://storage.googleapis.com/gemini-prod/images/brier-rabbit-logo-4-transparent.jpg-c8780a9f-3599-4cd4-972b-65672de30ddc" alt="Logo" class="h-16 mr-3">
+              <!--  <img src="" alt="Logo" class="h-16 mr-3">-->
                 <span class="text-2xl font-bold text-primary-teal" style="font-family: 'Knewave', cursive;">Soulful Gospel Learning</span>
             </a>
             <div class="hidden md:flex items-center space-x-6">
@@ -126,8 +126,8 @@
         </div>
     </footer>
 
-    <script crossorigin="anonymous">
-        w3.includeHTML();
+    <script>
+        //w3.includeHTML();
 
         function router() {
             var path = location.hash.slice(2) || "home";
@@ -139,7 +139,7 @@
          switch(page) {
                 case 'home':
                     contentDiv.setAttribute("w3-include-html", "templates/home.html");
-                    w3.getHttpObject("data/home.json",showContent);
+                    w3.includeHTML(w3.getHttpObject("data/home.json",showContent));
                     break;
                 case 'about':
                     contentDiv.setAttribute("w3-include-html", "templates/about.html");
