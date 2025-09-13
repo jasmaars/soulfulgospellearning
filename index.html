@@ -128,7 +128,9 @@
 
     <script>
         //w3.includeHTML();
-
+       function showContent(pageContent){
+           w3.displayObject("content", pageContent);
+       }
         function router() {
             var path = location.hash.slice(2) || "home";
             var parts = path.split('/');
@@ -190,9 +192,7 @@
                     w3.getHttpObject("data/home.json",showContent);
             }
         }
-       function showContent(pageContent){
-           w3.displayObject("content", pageContent);
-       }
+     
 
         window.onhashchange = router;
         
