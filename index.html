@@ -140,7 +140,7 @@
 
          switch(page) {
                 case 'home':
-                    contentDiv.setAttribute("w3-include-html", "templates/home.html");
+                    
                     //w3.includeHTML(w3.getHttpObject("data/home.json",showContent));
                     w3.includeHTML(myCallback);
                     function myCallback(){
@@ -148,6 +148,7 @@
                     }
                     function myFunction(myObject) {
                       w3.displayObject("content", myObject);
+                        contentDiv.setAttribute("w3-include-html", "templates/home.html");
                      }
                     break;
                 case 'about':
