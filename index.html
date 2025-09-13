@@ -143,7 +143,7 @@
                     break;
                 case 'about':
                     contentDiv.setAttribute("w3-include-html", "templates/about.html");
-                    w3.getHttpObject("data/about.json",showContent);
+                    w3.includeHTML(w3.getHttpObject("data/about.json",showContent));
                     break;
                 case 'contact':
                     contentDiv.setAttribute("w3-include-html", "templates/contact.html");
