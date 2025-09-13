@@ -1,0 +1,56 @@
+{
+    "hero": {
+        "tagline": "A Joyful Journey into Learning and Culture.",
+        "buttonText": "Start Learning",
+        "imageUrl": "https://placehold.co/1200x500/FFF9E6/333333?text=Soulful+Kindergarteners+Learning"
+    },
+    "benefits": [
+        {
+            "title": "Fun, Game-Based Lessons",
+            "description": "Our curriculum is packed with games and playful activities that make learning exciting and effective for young minds.",
+            "link": "#/about"
+        },
+        {
+            "title": "Hands-on Learning",
+            "description": "We believe students learn best by doing. Our lessons encourage real-world experiences and tactile exploration.",
+            "link": "#/about"
+        },
+        {
+            "title": "Black History All Year Round",
+            "description": "A culturally-responsive curriculum where students are immersed in the richness of Black history and culture throughout the year.",
+            "link": "#/about"
+        },
+        {
+            "title": "Academically Sound",
+            "description": "Aligned with national standards, our curriculum incorporates evidence-based practices to ensure a strong academic foundation.",
+            "link": "#/scope_sequence"
+        },
+        {
+            "title": "Completely Free",
+            "description": "Designed to make high-quality, culturally-rich education accessible to every child, everywhere.",
+            "link": "#/curriculum"
+        }
+    ],
+    "blog": {
+        "title": "Latest from Our Blog",
+        "posts": [
+            {"title": "The Power of Storytelling in Early Education", "link": "#"},
+            {"title": "5 Fun Ways to Teach Math at Home", "link": "#"},
+            {"title": "Celebrating Black Heroes in Your Homeschool", "link": "#"}
+        ]
+    },
+    "homeschoolResources": [
+        {
+            "title": "Home School Printables",
+            "description": "Access a variety of helpful homeschool printables for free. No email required!",
+            "buttonText": "View Printables",
+            "link": "#/printables"
+        },
+        {
+            "title": "Homeschooling Resources",
+            "description": "Discover a curated list of resources to support you on your homeschooling journey, for new and seasoned educators alike.",
+            "buttonText": "View Resources",
+            "link": "#/resources"
+        }
+    ]
+}
