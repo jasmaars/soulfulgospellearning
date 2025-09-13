@@ -144,8 +144,11 @@
                     //w3.includeHTML(w3.getHttpObject("data/home.json",showContent));
                     w3.includeHTML(myCallback);
                     function myCallback(){
-                      w3.getHttpObject("data/home.json",showContent);  
+                      w3.getHttpObject("data/home.json",myFunction);  
                     }
+                    function myFunction(myObject) {
+                      w3.displayObject("content", myObject);
+                     }
                     break;
                 case 'about':
                     contentDiv.setAttribute("w3-include-html", "templates/about.html");
