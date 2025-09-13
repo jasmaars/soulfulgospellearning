@@ -90,7 +90,7 @@
     </header>
 
     <!-- Main Content Area -->
-    <main id="content" class="flex-grow container mx-auto p-4 md:p-8" **w3-include-html=""**>
+    <main id="content" class="flex-grow container mx-auto p-4 md:p-8" w3-include-html="home.html">
         <!-- Content will be injected here by w3.js -->
     </main>
 
@@ -140,16 +140,8 @@
 
          switch(page) {
                 case 'home':
-                    
-                    //w3.includeHTML(w3.getHttpObject("data/home.json",showContent));
-                    w3.includeHTML(myCallback);
-                    function myCallback(){
-                      w3.getHttpObject("data/home.json",myFunction);  
-                    }
-                    function myFunction(myObject) {
-                      w3.displayObject("content", myObject);
-                        contentDiv.setAttribute("w3-include-html", "templates/home.html");
-                     }
+                    contentDiv.setAttribute("w3-include-html", "templates/home.html");
+                    w3.includeHTML(w3.getHttpObject("data/home.json",showContent));
                     break;
                 case 'about':
                     contentDiv.setAttribute("w3-include-html", "templates/about.html");
