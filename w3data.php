@@ -357,4 +357,3 @@ $cc= <<<EOT
 EOT;
 return $cc;
 }
-?>
