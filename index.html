@@ -141,8 +141,21 @@
          switch(page) {
                 case 'home':
                     contentDiv.setAttribute("w3-include-html", "templates/home.html");
-                    w3.includeHTML(w3.getHttpObject("data/home/hero.js",showHero));
-                    function showHero(pageContent){w3.displayObject("hero", pageContent);}
+                  /*  w3.includeHTML(w3.getHttpObject("data/home/hero.js",showHero));
+                    function showHero(pageContent){w3.displayObject("hero", pageContent);}*/
+w3.includeHTML(myCallback);
+
+function myCallback() {
+    w3.getHttpObject("data/home/hero.js", myFunction);
+    function myFunction(myObject) {
+  w3.displayObject("hero", myObject);
+}
+    
+}
+                 
+
+
+                 
                     break;
                 case 'about':
                     contentDiv.setAttribute("w3-include-html", "templates/about.html");
