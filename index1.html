@@ -7,13 +7,12 @@
 
 <h2>Testing W3.JS in HTML</h2>
 
-<div w3-include-html="templates/home.html"></div>
-
+<div id="content" w3-include-html="templates/home.html"></div>
 <script>
   function loadContent() {
   w3.getHttpObject("data/home/hero.json", function(myObject) {
     // Code to use the JSON data
-    w3.displayObject("hero", myObject);
+    w3.displayObject("content", myObject);
   });
 }
  w3.includeHTML(loadContent);
