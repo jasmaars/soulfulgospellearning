@@ -1,12 +1,21 @@
-{{hero.tagline}}
-{{hero.buttonText}}
-{{title}}
-{{description}}
-
-Learn More
-{{blog.title}}
-{{title}}
-{{title}}
-{{description}}
-
-{{buttonText}}
+<header id=”hero”>
+<h1>{{heroHeadline}}</h1>
+<h2>{{heroSubheadline}}</h2>
+<a href=”/{{pageName}}”>{{heroButtonText}}</a>
+</header>
+<section id=”benefits”>
+<h2>{{benefitsTitle}}</h2>
+  <div w3-repeat="benefits">
+  <h3>{{title}}</h3>
+  <p>{{description}}</p>
+  <a href="{{url}}">{{linkText}}</a>
+</div>
+</section>
+<section id=”resources”>
+<h2>{{resourcesTitle}}</h2>
+ <div w3-repeat="resources">
+  <h3>{{title}}</h3>
+  <p>{{description}}</p>
+  <a href="{{url}}">{{linkText}}</a>
+</div>
+</section>
