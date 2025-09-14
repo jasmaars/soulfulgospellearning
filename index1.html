@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<title>W3.JS</title>
+<script src="w3.js"></script>
+<body>
+
+<h2>Testing W3.JS in HTML</h2>
+
+<div w3-include-html="templates/home.html"></div>
+
+<script>
+  w3.includeHTML(myCallback);
+
+  function myCallback() {
+  w3.getHttpObject("data/hero.js", myFunction);
+    function myFunction(myObject) {
+  w3.displayObject("hero", myObject);
+}
+}
+
+
+</script>
+
+</body>
+</html> 
