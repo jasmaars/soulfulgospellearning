@@ -9,15 +9,13 @@
 <div w3-include-html="templates/home.html"></div>
 
 <script>
-  w3.includeHTML(myCallback);
-
-  function myCallback() {
-  w3.getHttpObject("data/home/hero.js", myFunction);
-    function myFunction(myObject) {
-  w3.displayObject("hero", myObject);
+  function loadContent() {
+  w3.getHttpObject("data/home/hero.js", function(myObject) {
+    // Code to use the JSON data
+    w3.displayObject("hero", myObject);
+  });
 }
-}
-
+ w3.includeHTML(loadContent);
 
 </script>
 
