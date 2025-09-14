@@ -1,5 +1,5 @@
 {
-"benefitsTitle":"Benefits"
+"benefitsTitle":"Benefits",
 "benefits":[
 {"title":"Title 1","description":"First Benefit","pageName":"about","linkText":"Learn More"},
 {"title":"Title 2","description":"Second Benefit","pageName":"about","linkText":"Learn More"},
