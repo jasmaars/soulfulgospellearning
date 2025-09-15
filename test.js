@@ -18,6 +18,7 @@
         return current;
     }
 
+    // New, recursive function to process the template
     function processTemplate(template, data) {
         let html = template;
 
@@ -29,76 +30,54 @@
             html = html.replace(new RegExp(placeholder.replace(/[{}]/g, '\\$&'), 'g'), value !== undefined ? String(value) : '');
         });
 
-        // Then handle ts-repeat elements
+        // Use a temporary div to work with the DOM elements
         const tempDiv = document.createElement('div');
         tempDiv.innerHTML = html;
 
-        // Process only first-level ts-repeat elements (pages)
-        const pagesRepeats = tempDiv.querySelectorAll('li[ts-repeat="pages"]');
-        pagesRepeats.forEach(pageElement => {
-            const pages = data.pages || [];
-            if (!Array.isArray(pages)) {
-                pageElement.remove();
-                return;
-            }
+        // The core recursive function to handle all repetitions
+        function processRepeats(contextElement, contextData) {
+            // Find all repeat elements at the current nesting level
+            const repeatElements = contextElement.querySelectorAll('[ts-repeat]');
 
-            let pageHtml = '';
-            pages.forEach(page => {
-                let pageTemplate = pageElement.outerHTML.replace(/\s*ts-repeat="pages"/g, '');
-                
-                // Replace page-level placeholders
-                pageTemplate = pageTemplate.replace(/{{pageName}}/g, page.pageName || '');
-                pageTemplate = pageTemplate.replace(/{{pageUrl}}/g, page.pageUrl || '');
+            repeatElements.forEach(repeatElement => {
+                const repeatKey = repeatElement.getAttribute('ts-repeat');
+                const repeatData = getNestedValue(contextData, repeatKey) || [];
 
-                // Handle submenu
-                if (page.submenu && Array.isArray(page.submenu) && page.submenu.length > 0) {
-                    // Find submenu template within this page
-                    const submenuMatch = pageTemplate.match(/<li\s+ts-repeat="submenu"[^>]*>.*?<\/li>/s);
-                    if (submenuMatch) {
-                        const submenuTemplate = submenuMatch[0].replace(/\s*ts-repeat="submenu"/g, '');
-                        
-                        let submenuHtml = '';
-                        page.submenu.forEach(submenuItem => {
-                            let submenuItemHtml = submenuTemplate;
-                            submenuItemHtml = submenuItemHtml.replace(/{{name}}/g, submenuItem.name || '');
-                            submenuItemHtml = submenuItemHtml.replace(/{{url}}/g, submenuItem.url || '');
-                            
-                            // Handle nested submenu (third level)
-                            if (submenuItem.submenu && Array.isArray(submenuItem.submenu) && submenuItem.submenu.length > 0) {
-                                const nestedSubmenuMatch = submenuItemHtml.match(/<li\s+ts-repeat="submenu"[^>]*>.*?<\/li>/s);
-                                if (nestedSubmenuMatch) {
-                                    const nestedTemplate = nestedSubmenuMatch[0].replace(/\s*ts-repeat="submenu"/g, '');
-                                    
-                                    let nestedHtml = '';
-                                    submenuItem.submenu.forEach(nestedItem => {
-                                        let nestedItemHtml = nestedTemplate;
-                                        nestedItemHtml = nestedItemHtml.replace(/{{name}}/g, nestedItem.name || '');
-                                        nestedItemHtml = nestedItemHtml.replace(/{{url}}/g, nestedItem.url || '');
-                                        nestedHtml += nestedItemHtml;
-                                    });
-                                    
-                                    submenuItemHtml = submenuItemHtml.replace(/<li\s+ts-repeat="submenu"[^>]*>.*?<\/li>/s, nestedHtml);
-                                }
-                            } else {
-                                // Remove empty nested submenu
-                                submenuItemHtml = submenuItemHtml.replace(/<ul[^>]*>[\s\S]*?<li\s+ts-repeat="submenu"[^>]*>.*?<\/li>[\s\S]*?<\/ul>/s, '');
-                            }
-                            
-                            submenuHtml += submenuItemHtml;
-                        });
-                        
-                        pageTemplate = pageTemplate.replace(/<li\s+ts-repeat="submenu"[^>]*>.*?<\/li>/s, submenuHtml);
-                    }
-                } else {
-                    // Remove empty submenu ul
-                    pageTemplate = pageTemplate.replace(/<ul[^>]*>[\s\S]*?<li\s+ts-repeat="submenu"[^>]*>.*?<\/li>[\s\S]*?<\/ul>/s, '');
+                if (!Array.isArray(repeatData)) {
+                    // If the data is not an array, remove the element
+                    repeatElement.remove();
+                    return;
                 }
 
-                pageHtml += pageTemplate;
-            });
+                const originalTemplate = repeatElement.outerHTML;
+                let repeatedHtml = '';
 
-            pageElement.outerHTML = pageHtml;
-        });
+                repeatData.forEach(itemData => {
+                    // Create a new div to hold the single item's template for processing
+                    const itemDiv = document.createElement('div');
+                    itemDiv.innerHTML = originalTemplate.replace(/\s*ts-repeat="[^"]+"/g, '');
+
+                    // Replace placeholders within this specific item's template
+                    const itemPlaceholders = itemDiv.innerHTML.match(/{{([^{}]+)}}/g) || [];
+                    itemPlaceholders.forEach(placeholder => {
+                        const key = placeholder.slice(2, -2).trim();
+                        const value = getNestedValue(itemData, key);
+                        itemDiv.innerHTML = itemDiv.innerHTML.replace(new RegExp(placeholder.replace(/[{}]/g, '\\$&'), 'g'), value !== undefined ? String(value) : '');
+                    });
+
+                    // Recursively process any nested repeats inside this item
+                    processRepeats(itemDiv, itemData);
+
+                    repeatedHtml += itemDiv.innerHTML;
+                });
+
+                // Replace the original ts-repeat element with the generated HTML
+                repeatElement.outerHTML = repeatedHtml;
+            });
+        }
+
+        // Start the recursive process from the top-level element
+        processRepeats(tempDiv, data);
 
         return tempDiv.innerHTML;
     }
