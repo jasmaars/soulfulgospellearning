@@ -1,4 +1,4 @@
-// Fixed templating system that properly handles nested ts-repeat
+// Simplified templating system with proper nested repeat handling
 (function(window) {
     'use strict';
 
@@ -18,86 +18,87 @@
         return current;
     }
 
-    function processTemplate(template, data) {
-        const tempDiv = document.createElement('div');
-        tempDiv.innerHTML = template;
-        processRepeats(tempDiv, data);
-        let finalHtml = tempDiv.innerHTML;
-        finalHtml = processSimplePlaceholders(finalHtml, data);
-        return finalHtml;
-    }
-
-    function processRepeats(container, data) {
-        // Find only the TOP-LEVEL ts-repeat elements (not nested ones)
-        const topLevelRepeats = [];
-        const walker = document.createTreeWalker(
-            container,
-            NodeFilter.SHOW_ELEMENT,
-            {
-                acceptNode: function(node) {
-                    if (node.hasAttribute && node.hasAttribute('ts-repeat')) {
-                        // Check if this node is nested inside another ts-repeat
-                        let parent = node.parentElement;
-                        while (parent && parent !== container) {
-                            if (parent.hasAttribute && parent.hasAttribute('ts-repeat')) {
-                                return NodeFilter.FILTER_SKIP; // Skip nested ts-repeat
-                            }
-                            parent = parent.parentElement;
-                        }
-                        return NodeFilter.FILTER_ACCEPT; // Accept top-level ts-repeat
-                    }
-                    return NodeFilter.FILTER_SKIP;
-                }
-            }
-        );
-
-        let node;
-        while (node = walker.nextNode()) {
-            topLevelRepeats.push(node);
-        }
-
-        // Process each top-level repeat
-        topLevelRepeats.forEach(element => {
-            if (!element.parentNode) return; // Skip if already processed
-
-            const arrayPath = element.getAttribute('ts-repeat');
-            const collection = getNestedValue(data, arrayPath);
-
-            if (!Array.isArray(collection)) {
-                console.warn(`Collection at path '${arrayPath}' is not an array or doesn't exist`);
-                element.remove();
-                return;
-            }
-
-            const itemTemplate = element.outerHTML.replace(/\s*ts-repeat="[^"]*"/g, '');
-            
-            const itemsHtml = collection.map(item => {
-                const itemDiv = document.createElement('div');
-                itemDiv.innerHTML = itemTemplate;
-
-                // Recursively process nested repeats with the individual item data
-                processRepeats(itemDiv, item);
-
-                let processedHtml = itemDiv.innerHTML;
-                processedHtml = processSimplePlaceholders(processedHtml, item);
-                
-                return processedHtml;
-            }).join('');
-
-            element.outerHTML = itemsHtml;
-        });
-    }
-
     function processSimplePlaceholders(html, data) {
         const placeholders = html.match(/{{([^{}]+)}}/g) || [];
         
         placeholders.forEach(placeholder => {
             const key = placeholder.slice(2, -2).trim();
             const value = getNestedValue(data, key);
-            html = html.replace(placeholder, value !== undefined ? String(value) : '');
+            html = html.replace(new RegExp(placeholder.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'), value !== undefined ? String(value) : '');
         });
 
         return html;
+    }
+
+    function processTemplate(template, data) {
+        // First, replace all simple placeholders to prevent image loading issues
+        let html = processSimplePlaceholders(template, data);
+        
+        // Then process repeats
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = html;
+        
+        processRepeats(tempDiv, data);
+        
+        return tempDiv.innerHTML;
+    }
+
+    function processRepeats(container, data) {
+        let changed = true;
+        
+        // Keep processing until no more changes (handles nested repeats)
+        while (changed) {
+            changed = false;
+            const repeatElements = container.querySelectorAll('[ts-repeat]');
+            
+            if (repeatElements.length === 0) break;
+            
+            // Process one level at a time
+            for (const element of repeatElements) {
+                // Skip if this element is inside another ts-repeat element
+                if (hasRepeatAncestor(element, container)) {
+                    continue;
+                }
+                
+                const arrayPath = element.getAttribute('ts-repeat');
+                const collection = getNestedValue(data, arrayPath);
+
+                if (!Array.isArray(collection)) {
+                    console.warn(`Collection at path '${arrayPath}' is not an array or doesn't exist`);
+                    element.remove();
+                    changed = true;
+                    break;
+                }
+
+                // Get the template without the ts-repeat attribute
+                const itemTemplate = element.outerHTML.replace(/\s*ts-repeat="[^"]*"/g, '');
+                
+                // Generate HTML for each item
+                const itemsHtml = collection.map(item => {
+                    // Process placeholders for this item first
+                    let itemHtml = processSimplePlaceholders(itemTemplate, item);
+                    
+                    // If there are nested ts-repeat elements, we'll process them in the next iteration
+                    return itemHtml;
+                }).join('');
+
+                // Replace the ts-repeat element with the generated items
+                element.outerHTML = itemsHtml;
+                changed = true;
+                break; // Process one element at a time to avoid conflicts
+            }
+        }
+    }
+
+    function hasRepeatAncestor(element, container) {
+        let parent = element.parentElement;
+        while (parent && parent !== container) {
+            if (parent.hasAttribute && parent.hasAttribute('ts-repeat')) {
+                return true;
+            }
+            parent = parent.parentElement;
+        }
+        return false;
     }
 
     ts.gethttpObject = function(url) {
