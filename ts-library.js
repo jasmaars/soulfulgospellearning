@@ -1,31 +1,18 @@
-// A simple, modern templating library.
-// Designed to be easy to understand and use, similar to w3.js, but with modern features.
-
-// The library is wrapped in an Immediately Invoked Function Expression (IIFE) to
-// prevent global namespace pollution and create a private scope.
+// Enhanced templating system with nested ts-repeat support for submenus and hierarchical data
 (function(window) {
     'use strict';
 
-    // The main object that will contain all of our library's methods.
-    // It is attached to the global 'window' object, so it can be accessed
-    // anywhere in the code via `ts.methodName()`.
     const ts = {};
-
-    // A private object to store registered components.
     const registeredComponents = {};
     const componentTemplates = {};
 
     /**
      * Safely retrieves a nested value from an object using a dot-notation path.
-     * @param {Object} obj - The object to search within.
-     * @param {string} path - The dot-notation path to the desired value (e.g., 'user.address.city').
-     * @returns {*} - The value at the specified path, or `undefined` if not found.
      */
     function getNestedValue(obj, path) {
         const parts = path.split('.');
         let current = obj;
         for (const part of parts) {
-            // If any part of the path is null, undefined, or not an object, stop and return undefined.
             if (current === null || typeof current !== 'object' || !(part in current)) {
                 return undefined;
             }
@@ -35,31 +22,114 @@
     }
 
     /**
-     * Fetches a JSON object from a given URL using the modern Fetch API.
-     * This method is asynchronous and returns a Promise.
-     * @param {string} url - The URL of the JSON file to fetch.
-     * @returns {Promise<Object>} - A Promise that resolves with the parsed JSON object.
-     * It rejects with an error if the fetch fails or the
-     * response is not valid JSON.
+     * Enhanced template processor that handles nested ts-repeat elements
+     */
+    function processTemplate(template, data) {
+        // Create a temporary DOM element to work with the HTML
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = template;
+
+        // Process ts-repeat elements recursively (deepest first for nested support)
+        processRepeats(tempDiv, data);
+
+        // Process regular placeholders in the entire template
+        let finalHtml = tempDiv.innerHTML;
+        finalHtml = processSimplePlaceholders(finalHtml, data);
+
+        return finalHtml;
+    }
+
+    /**
+     * Recursively process ts-repeat elements, handling nested repeats
+     */
+    function processRepeats(container, data) {
+        // Find all ts-repeat elements at the current level
+        const repeatElements = Array.from(container.querySelectorAll('[ts-repeat]'));
+        
+        // Process from deepest nested to shallowest to handle nesting correctly
+        const elementsByDepth = repeatElements
+            .map(el => ({ element: el, depth: getElementDepth(el, container) }))
+            .sort((a, b) => b.depth - a.depth); // Deepest first
+
+        elementsByDepth.forEach(({ element }) => {
+            // Skip if this element has already been processed (removed from DOM)
+            if (!element.parentNode) return;
+
+            const arrayPath = element.getAttribute('ts-repeat');
+            const collection = getNestedValue(data, arrayPath);
+
+            if (!Array.isArray(collection)) {
+                console.warn(`Collection at path '${arrayPath}' is not an array or doesn't exist`);
+                element.remove();
+                return;
+            }
+
+            // Get the template HTML of the repeating element (without the ts-repeat attribute)
+            const itemTemplate = element.outerHTML.replace(/\s*ts-repeat="[^"]*"/g, '');
+            
+            // Generate HTML for all items in the collection
+            const itemsHtml = collection.map(item => {
+                // Create a temporary container for this item
+                const itemDiv = document.createElement('div');
+                itemDiv.innerHTML = itemTemplate;
+
+                // Recursively process any nested ts-repeat elements within this item
+                processRepeats(itemDiv, item);
+
+                // Process placeholders for this item
+                let processedHtml = itemDiv.innerHTML;
+                processedHtml = processSimplePlaceholders(processedHtml, item);
+                
+                return processedHtml;
+            }).join('');
+
+            // Replace the ts-repeat element with the generated items
+            element.outerHTML = itemsHtml;
+        });
+    }
+
+    /**
+     * Calculate the depth of an element within a container (for nested processing)
+     */
+    function getElementDepth(element, container) {
+        let depth = 0;
+        let current = element;
+        while (current && current !== container) {
+            depth++;
+            current = current.parentElement;
+        }
+        return depth;
+    }
+
+    /**
+     * Process simple {{placeholder}} replacements
+     */
+    function processSimplePlaceholders(html, data) {
+        const placeholders = html.match(/{{([^{}]+)}}/g) || [];
+        
+        placeholders.forEach(placeholder => {
+            const key = placeholder.slice(2, -2).trim();
+            const value = getNestedValue(data, key);
+            html = html.replace(placeholder, value !== undefined ? String(value) : '');
+        });
+
+        return html;
+    }
+
+    /**
+     * Fetches JSON from URL
      */
     ts.gethttpObject = function(url) {
-        // Return a new Promise to handle the asynchronous operation.
         return new Promise((resolve, reject) => {
             fetch(url)
                 .then(response => {
-                    // Check if the network response was successful (status code 200-299).
                     if (!response.ok) {
                         throw new Error(`HTTP error! Status: ${response.status}`);
                     }
-                    // Attempt to parse the response as JSON.
                     return response.json();
                 })
-                .then(data => {
-                    // If parsing is successful, resolve the Promise with the data.
-                    resolve(data);
-                })
+                .then(data => resolve(data))
                 .catch(error => {
-                    // If any error occurs during the fetch or parsing, reject the Promise.
                     console.error('Failed to fetch JSON file:', error);
                     reject(error);
                 });
@@ -67,11 +137,7 @@
     };
 
     /**
-     * Fetches a plain text string from a given URL.
-     * This method is asynchronous and returns a Promise.
-     * @param {string} url - The URL of the text file to fetch.
-     * @returns {Promise<string>} - A Promise that resolves with the text content.
-     * It rejects with an error if the fetch fails.
+     * Fetches text from URL
      */
     ts.gethttpText = function(url) {
         return new Promise((resolve, reject) => {
@@ -82,9 +148,7 @@
                     }
                     return response.text();
                 })
-                .then(text => {
-                    resolve(text);
-                })
+                .then(text => resolve(text))
                 .catch(error => {
                     console.error('Failed to fetch text file:', error);
                     reject(error);
@@ -93,145 +157,63 @@
     };
 
     /**
-     * Finds all elements with the "ts-include-html" attribute and loads the
-     * specified HTML file into them.
-     * @returns {Promise<void>} - A Promise that resolves when all includes are complete.
-     */
-    ts.includeHTML = async function() {
-        const elements = document.querySelectorAll('[ts-include-html]');
-        const fetchPromises = [];
-
-        // Iterate over each element found.
-        elements.forEach(element => {
-            const url = element.getAttribute('ts-include-html');
-            if (url) {
-                // For each element, push a fetch promise to an array.
-                const fetchPromise = fetch(url)
-                    .then(response => {
-                        // Check for a successful response.
-                        if (!response.ok) {
-                            throw new Error(`Failed to fetch HTML from ${url}. Status: ${response.status}`);
-                        }
-                        return response.text();
-                    })
-                    .then(html => {
-                        // Set the innerHTML of the element with the fetched content.
-                        element.innerHTML = html;
-                    })
-                    .catch(error => {
-                        console.error('Error including HTML:', error);
-                        // Still resolve to allow other includes to complete.
-                        return Promise.resolve();
-                    });
-                fetchPromises.push(fetchPromise);
-            }
-        });
-
-        // Wait for all fetch promises to complete.
-        await Promise.all(fetchPromises);
-    };
-
-    /**
-     * Renders a data object into an HTML template by replacing placeholders.
-     * Placeholders are defined by double curly braces, e.g., {{key}} or {{user.name}}.
-     * @param {string} selector - The CSS selector for the HTML element(s) to render into.
-     * @param {Object} data - The data object to be used for rendering.
-     * @param {function(Object): Object} [processFn] - An optional function to process the data before rendering.
+     * Enhanced render method with nested collection support
      */
     ts.render = function(selector, data, processFn) {
-        // Process the data if a function is provided.
         const processedData = processFn ? processFn(data) : data;
-
-        // Find all elements that match the given selector.
         const elements = document.querySelectorAll(selector);
 
-        // Iterate over each element found.
         elements.forEach(element => {
-            // Get the current HTML content of the element.
-            let html = element.innerHTML;
-
-            // Find all placeholders in the HTML using a regular expression.
-            const placeholders = html.match(/{{([^{}]+)}}/g) || [];
-
-            // Replace each placeholder with the corresponding value from the data object.
-            placeholders.forEach(placeholder => {
-                // Extract the key path from the placeholder, e.g., 'user.name'.
-                const key = placeholder.slice(2, -2);
-                // Get the nested value using the helper function.
-                const value = getNestedValue(processedData, key);
-                // Replace the placeholder. If the value is undefined, use an empty string.
-                html = html.replace(placeholder, value !== undefined ? String(value) : '');
-            });
-
-            // Update the element's innerHTML with the rendered content.
-            element.innerHTML = html;
+            const template = element.innerHTML;
+            const renderedHtml = processTemplate(template, processedData);
+            element.innerHTML = renderedHtml;
         });
     };
 
     /**
-     * Renders a collection of data objects into a template and appends the results
-     * to a container.
-     * @param {string} containerSelector - The CSS selector for the container element.
-     * @param {Array<Object>} data - An array of data objects to be rendered.
-     * @param {string} templateSelector - The CSS selector for the template element.
-     * @param {function(Object): Object} [processFn] - An optional function to process each data item before rendering.
-     */
-    ts.renderCollection = function(containerSelector, data, templateSelector, processFn) {
-        const container = document.querySelector(containerSelector);
-        const templateElement = document.querySelector(templateSelector);
-
-        if (!container || !templateElement) {
-            console.error('Container or template element not found for rendering collection.');
-            return;
-        }
-
-        // Store the original HTML of the template element.
-        const originalTemplateHTML = templateElement.innerHTML;
-        // Clear the container to make way for the rendered items.
-        container.innerHTML = '';
-
-        // Iterate over each item in the data array.
-        data.forEach(item => {
-            // Process the data item if a function is provided.
-            const processedItem = processFn ? processFn(item) : item;
-
-            // Create a temporary element to hold the template HTML.
-            const tempElement = document.createElement('div');
-            tempElement.innerHTML = originalTemplateHTML;
-
-            // Find all placeholders in the template's HTML.
-            const placeholders = tempElement.innerHTML.match(/{{([^{}]+)}}/g) || [];
-
-            // Replace each placeholder with the corresponding value from the current item.
-            let renderedHtml = tempElement.innerHTML;
-            placeholders.forEach(placeholder => {
-                const key = placeholder.slice(2, -2);
-                const value = getNestedValue(processedItem, key);
-                renderedHtml = renderedHtml.replace(placeholder, value !== undefined ? String(value) : '');
-            });
-
-            // Append the rendered HTML to the container.
-            container.innerHTML += renderedHtml;
-        });
-    };
-
-    /**
-     * Registers a new component with a name and its HTML template URL.
-     * @param {string} componentName - The name of the component (e.g., 'product-card').
-     * @param {string} templateUrl - The URL to the component's HTML template file.
+     * Register a component
      */
     ts.registerComponent = function(componentName, templateUrl) {
         if (!componentName || !templateUrl) {
-            console.error('Component name and template URL are required to register a component.');
+            console.error('Component name and template URL are required.');
             return;
         }
         registeredComponents[componentName] = templateUrl;
     };
 
     /**
-     * A self-executing function that runs on page load to automatically render all components.
-     * This function finds all elements with a 'ts-component' attribute, fetches their data and template,
-     * and renders the final HTML.
+     * Include HTML files
+     */
+    ts.includeHTML = async function() {
+        const elements = document.querySelectorAll('[ts-include-html]');
+        const fetchPromises = [];
+
+        elements.forEach(element => {
+            const url = element.getAttribute('ts-include-html');
+            if (url) {
+                const fetchPromise = fetch(url)
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error(`Failed to fetch HTML from ${url}. Status: ${response.status}`);
+                        }
+                        return response.text();
+                    })
+                    .then(html => {
+                        element.innerHTML = html;
+                    })
+                    .catch(error => {
+                        console.error('Error including HTML:', error);
+                        return Promise.resolve();
+                    });
+                fetchPromises.push(fetchPromise);
+            }
+        });
+
+        await Promise.all(fetchPromises);
+    };
+
+    /**
+     * Initialize components with enhanced templating
      */
     async function initComponents() {
         const componentElements = document.querySelectorAll('[ts-component]');
@@ -239,7 +221,6 @@
         for (const element of componentElements) {
             const componentName = element.getAttribute('ts-component');
             const dataUrl = element.getAttribute('data-url');
-            const collectionUrl = element.getAttribute('collection-url');
 
             const templateUrl = registeredComponents[componentName];
             if (!templateUrl) {
@@ -248,91 +229,35 @@
             }
 
             try {
-                // Fetch the template HTML once and cache it.
+                // Fetch and cache template
                 if (!componentTemplates[componentName]) {
                     const templateHtml = await ts.gethttpText(templateUrl);
                     componentTemplates[componentName] = templateHtml;
                 }
                 const templateHtml = componentTemplates[componentName];
 
-                // If a collection URL is specified, fetch the collection data.
-                if (collectionUrl) {
-                    const collectionData = await ts.gethttpObject(collectionUrl);
-                    let collectionArray;
-                    // Attempt to find the correct array within the fetched data.
-                    // This will check if the data is already an array, or if it's an object
-                    // with an array property that matches the component name (e.g., 'benefits-list' -> 'benefits').
-                    if (Array.isArray(collectionData)) {
-                        collectionArray = collectionData;
-                    } else if (typeof collectionData === 'object' && collectionData !== null) {
-                        const baseName = componentName.replace(/-list$/, '');
-                        if (Array.isArray(collectionData[baseName])) {
-                            collectionArray = collectionData[baseName];
-                        } else {
-                            console.error(`Could not find a valid array for component '${componentName}' at '${collectionUrl}'.`);
-                            continue;
-                        }
-                    } else {
-                        console.error(`Invalid data received from '${collectionUrl}'. Expected an array or object.`);
-                        continue;
-                    }
-
-                    let finalHtml = '';
-                    collectionArray.forEach(item => {
-                        let renderedItem = templateHtml;
-                        const placeholders = renderedItem.match(/{{([^{}]+)}}/g) || [];
-                        placeholders.forEach(placeholder => {
-                            const key = placeholder.slice(2, -2);
-                            const value = getNestedValue(item, key);
-                            renderedItem = renderedItem.replace(placeholder, value !== undefined ? String(value) : '');
-                        });
-                        finalHtml += renderedItem;
-                    });
-                    element.innerHTML = finalHtml;
-                } else if (dataUrl) {
-                    // If a single data URL is specified, fetch the single data object.
-                    const data = await ts.gethttpObject(dataUrl);
-                    let renderedHtml = templateHtml;
-                    const placeholders = renderedHtml.match(/{{([^{}]+)}}/g) || [];
-                    placeholders.forEach(placeholder => {
-                        const key = placeholder.slice(2, -2);
-                        const value = getNestedValue(data, key);
-                        renderedHtml = renderedHtml.replace(placeholder, value !== undefined ? String(value) : '');
-                    });
-                    element.innerHTML = renderedHtml;
-                } else {
-                    // If no data URL is specified, just render the template as-is.
-                    element.innerHTML = templateHtml;
+                // Fetch data if URL provided
+                let data = {};
+                if (dataUrl) {
+                    data = await ts.gethttpObject(dataUrl);
                 }
+
+                // Process template with enhanced system
+                const renderedHtml = processTemplate(templateHtml, data);
+                element.innerHTML = renderedHtml;
+
             } catch (error) {
                 console.error(`Error rendering component '${componentName}':`, error);
             }
         }
     }
 
-    // Attach the 'ts' object to the global window object.
+    // Attach to global scope
     window.ts = ts;
 
-    // We'll run this function on a timeout to ensure all components are registered first.
-    // This is a simple solution to ensure synchronous registration and asynchronous rendering.
+    // Initialize on page load
     window.onload = function() {
         setTimeout(initComponents, 0);
-    }
-
-    // --- Example Usage ---
-    // You can uncomment the code below to test the functions.
-    //
-    // HTML file:
-    // <body>
-    //   <div ts-component="header-component"></div>
-    //   <div ts-component="blog-post" data-url="/data/post.json"></div>
-    //   <div ts-component="product-list" collection-url="/data/products.json"></div>
-    // </body>
-    //
-    // JavaScript file:
-    // ts.registerComponent('header-component', '/templates/header.html');
-    // ts.registerComponent('blog-post', '/templates/post.html');
-    // ts.registerComponent('product-list', '/templates/product-card.html');
+    };
 
 })(window);
-
