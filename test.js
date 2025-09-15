@@ -1,4 +1,4 @@
-// Debug version to help identify the nested repeat issue
+// Fixed templating system that properly handles nested ts-repeat
 (function(window) {
     'use strict';
 
@@ -19,54 +19,64 @@
     }
 
     function processTemplate(template, data) {
-        console.log('Processing template with data:', data);
         const tempDiv = document.createElement('div');
         tempDiv.innerHTML = template;
-
-        processRepeats(tempDiv, data, 0); // Added depth tracking
-
+        processRepeats(tempDiv, data);
         let finalHtml = tempDiv.innerHTML;
         finalHtml = processSimplePlaceholders(finalHtml, data);
-
         return finalHtml;
     }
 
-    function processRepeats(container, data, depth = 0) {
-        const indent = '  '.repeat(depth);
-        console.log(`${indent}Processing repeats at depth ${depth} with data:`, data);
-        
-        const repeatElements = Array.from(container.querySelectorAll('[ts-repeat]'));
-        
-        const elementsByDepth = repeatElements
-            .map(el => ({ element: el, depth: getElementDepth(el, container) }))
-            .sort((a, b) => b.depth - a.depth);
+    function processRepeats(container, data) {
+        // Find only the TOP-LEVEL ts-repeat elements (not nested ones)
+        const topLevelRepeats = [];
+        const walker = document.createTreeWalker(
+            container,
+            NodeFilter.SHOW_ELEMENT,
+            {
+                acceptNode: function(node) {
+                    if (node.hasAttribute && node.hasAttribute('ts-repeat')) {
+                        // Check if this node is nested inside another ts-repeat
+                        let parent = node.parentElement;
+                        while (parent && parent !== container) {
+                            if (parent.hasAttribute && parent.hasAttribute('ts-repeat')) {
+                                return NodeFilter.FILTER_SKIP; // Skip nested ts-repeat
+                            }
+                            parent = parent.parentElement;
+                        }
+                        return NodeFilter.FILTER_ACCEPT; // Accept top-level ts-repeat
+                    }
+                    return NodeFilter.FILTER_SKIP;
+                }
+            }
+        );
 
-        elementsByDepth.forEach(({ element }) => {
-            if (!element.parentNode) return;
+        let node;
+        while (node = walker.nextNode()) {
+            topLevelRepeats.push(node);
+        }
+
+        // Process each top-level repeat
+        topLevelRepeats.forEach(element => {
+            if (!element.parentNode) return; // Skip if already processed
 
             const arrayPath = element.getAttribute('ts-repeat');
-            console.log(`${indent}Looking for collection at path: "${arrayPath}"`);
-            console.log(`${indent}Available data keys:`, Object.keys(data || {}));
-            
             const collection = getNestedValue(data, arrayPath);
-            console.log(`${indent}Collection found:`, collection);
 
             if (!Array.isArray(collection)) {
-                console.warn(`${indent}Collection at path '${arrayPath}' is not an array or doesn't exist. Data:`, data);
+                console.warn(`Collection at path '${arrayPath}' is not an array or doesn't exist`);
                 element.remove();
                 return;
             }
 
             const itemTemplate = element.outerHTML.replace(/\s*ts-repeat="[^"]*"/g, '');
             
-            const itemsHtml = collection.map((item, index) => {
-                console.log(`${indent}Processing item ${index}:`, item);
-                
+            const itemsHtml = collection.map(item => {
                 const itemDiv = document.createElement('div');
                 itemDiv.innerHTML = itemTemplate;
 
                 // Recursively process nested repeats with the individual item data
-                processRepeats(itemDiv, item, depth + 1);
+                processRepeats(itemDiv, item);
 
                 let processedHtml = itemDiv.innerHTML;
                 processedHtml = processSimplePlaceholders(processedHtml, item);
@@ -76,16 +86,6 @@
 
             element.outerHTML = itemsHtml;
         });
-    }
-
-    function getElementDepth(element, container) {
-        let depth = 0;
-        let current = element;
-        while (current && current !== container) {
-            depth++;
-            current = current.parentElement;
-        }
-        return depth;
     }
 
     function processSimplePlaceholders(html, data) {
@@ -100,7 +100,6 @@
         return html;
     }
 
-    // Rest of your existing methods...
     ts.gethttpObject = function(url) {
         return new Promise((resolve, reject) => {
             fetch(url)
@@ -154,6 +153,34 @@
         registeredComponents[componentName] = templateUrl;
     };
 
+    ts.includeHTML = async function() {
+        const elements = document.querySelectorAll('[ts-include-html]');
+        const fetchPromises = [];
+
+        elements.forEach(element => {
+            const url = element.getAttribute('ts-include-html');
+            if (url) {
+                const fetchPromise = fetch(url)
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error(`Failed to fetch HTML from ${url}. Status: ${response.status}`);
+                        }
+                        return response.text();
+                    })
+                    .then(html => {
+                        element.innerHTML = html;
+                    })
+                    .catch(error => {
+                        console.error('Error including HTML:', error);
+                        return Promise.resolve();
+                    });
+                fetchPromises.push(fetchPromise);
+            }
+        });
+
+        await Promise.all(fetchPromises);
+    };
+
     async function initComponents() {
         const componentElements = document.querySelectorAll('[ts-component]');
 
@@ -179,7 +206,6 @@
                     data = await ts.gethttpObject(dataUrl);
                 }
 
-                console.log('Component data loaded:', data);
                 const renderedHtml = processTemplate(templateHtml, data);
                 element.innerHTML = renderedHtml;
 
