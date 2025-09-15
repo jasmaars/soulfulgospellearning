@@ -20,19 +20,19 @@
 
     // New, recursive function to process the template
     function processTemplate(template, data) {
-        let html = template;
+        // Use a temporary div to work with the DOM elements
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = template;
 
         // First, replace all simple placeholders
-        const placeholders = html.match(/{{([^{}]+)}}/g) || [];
+        const placeholders = tempDiv.innerHTML.match(/{{([^{}]+)}}/g) || [];
         placeholders.forEach(placeholder => {
             const key = placeholder.slice(2, -2).trim();
             const value = getNestedValue(data, key);
-            html = html.replace(new RegExp(placeholder.replace(/[{}]/g, '\\$&'), 'g'), value !== undefined ? String(value) : '');
+            if (value !== undefined) {
+                tempDiv.innerHTML = tempDiv.innerHTML.replace(new RegExp(placeholder.replace(/[{}]/g, '\\$&'), 'g'), String(value));
+            }
         });
-
-        // Use a temporary div to work with the DOM elements
-        const tempDiv = document.createElement('div');
-        tempDiv.innerHTML = html;
 
         // The core recursive function to handle all repetitions
         function processRepeats(contextElement, contextData) {
@@ -49,30 +49,40 @@
                     return;
                 }
 
+                const parent = repeatElement.parentNode;
+                if (!parent) return; // Safety check
+
                 const originalTemplate = repeatElement.outerHTML;
-                let repeatedHtml = '';
+                const fragment = document.createDocumentFragment();
 
                 repeatData.forEach(itemData => {
-                    // Create a new div to hold the single item's template for processing
                     const itemDiv = document.createElement('div');
-                    itemDiv.innerHTML = originalTemplate.replace(/\s*ts-repeat="[^"]+"/g, '');
-
-                    // Replace placeholders within this specific item's template
-                    const itemPlaceholders = itemDiv.innerHTML.match(/{{([^{}]+)}}/g) || [];
-                    itemPlaceholders.forEach(placeholder => {
-                        const key = placeholder.slice(2, -2).trim();
-                        const value = getNestedValue(itemData, key);
-                        itemDiv.innerHTML = itemDiv.innerHTML.replace(new RegExp(placeholder.replace(/[{}]/g, '\\$&'), 'g'), value !== undefined ? String(value) : '');
-                    });
-
-                    // Recursively process any nested repeats inside this item
-                    processRepeats(itemDiv, itemData);
-
-                    repeatedHtml += itemDiv.innerHTML;
+                    itemDiv.innerHTML = originalTemplate;
+                    const newRepeatElement = itemDiv.firstElementChild;
+                    
+                    if (newRepeatElement) {
+                        newRepeatElement.removeAttribute('ts-repeat'); // Remove the attribute on the copy
+                        
+                        // Replace placeholders within this specific item's template
+                        const itemPlaceholders = newRepeatElement.innerHTML.match(/{{([^{}]+)}}/g) || [];
+                        itemPlaceholders.forEach(placeholder => {
+                            const key = placeholder.slice(2, -2).trim();
+                            const value = getNestedValue(itemData, key);
+                            if (value !== undefined) {
+                                newRepeatElement.innerHTML = newRepeatElement.innerHTML.replace(new RegExp(placeholder.replace(/[{}]/g, '\\$&'), 'g'), String(value));
+                            }
+                        });
+                        
+                        // Recursively process any nested repeats inside this item
+                        processRepeats(newRepeatElement, itemData);
+                        
+                        fragment.appendChild(newRepeatElement);
+                    }
                 });
 
-                // Replace the original ts-repeat element with the generated HTML
-                repeatElement.outerHTML = repeatedHtml;
+                // Replace the original ts-repeat element with the generated fragment
+                parent.insertBefore(fragment, repeatElement);
+                repeatElement.remove();
             });
         }
 
