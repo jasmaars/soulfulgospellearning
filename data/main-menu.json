@@ -16,7 +16,7 @@
  {
       "pageName": "Help",
       "pageUrl": "help",
-      "submenu": ["name":"FAQ","url":"faq"]
+      "submenu": [{"name":"FAQ","url":"faq"}]
     },    
   {
       "pageName": "Curriculum",
