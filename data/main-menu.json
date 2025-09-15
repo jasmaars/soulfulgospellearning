@@ -1,5 +1,5 @@
 {
-  "logoUrl": "/images/logo.png",
+  "logoUrl": "images/logo.png",
   "siteName": "My Learning Site",
   "siteUrl": "/",
   "pages": [
@@ -24,52 +24,37 @@
       "submenu": [
         {
           "name": "Quarter 1",
-          "url": "/course1/q1-2024",
+          "url": "course1/q1-2024",
           "submenu": [
             {
               "name": "Week 1",
-              "url": "/course1/q1-2024/week1"
+              "url": "q1-2024/week1"
             },
             {
               "name": "Week 2", 
-              "url": "/course1/q1-2024/week2"
+              "url": "q1-2024/week2"
             },
             {
               "name": "Week 3",
-              "url": "/course1/q1-2024/week3"
+              "url": "q1-2024/week3"
             }
           ]
         },
         {
           "name": "Q2 2024",
-          "url": "/course1/q2-2024", 
+          "url": "q2-2024", 
           "submenu": [
             {
               "name": "Week 1",
-              "url": "/course1/q2-2024/week1"
+              "url": "q2-2024/week1"
             },
             {
               "name": "Week 2",
-              "url": "/course1/q2-2024/week2"
+              "url": "q2-2024/week2"
             }
           ]
         }
       ]
-    },
-    {
-      "pageName": "Scope & Sequence",
-      "pageUrl": "/scope-and-sequence",
-      "submenu": []
-    },
-    {
-      "pageName": "Home Printables",
-      "pageUrl": "printables",
-      "submenu": []
-    },
-   {
-      "pageName": "Home Resources",
-      "pageUrl": "resources",
-      "submenu": []
     }  
 ]
 }
