@@ -89,6 +89,18 @@
         // Start the recursive process from the top-level element
         processRepeats(tempDiv, data);
 
+        // --- NEW CODE ADDED HERE ---
+        // Find all elements with ts-src and move the value to src
+        const elementsWithDataSrc = tempDiv.querySelectorAll('[ts-src]');
+        elementsWithDataSrc.forEach(element => {
+            const srcValue = element.getAttribute('ts-src');
+            if (srcValue) {
+                element.src = srcValue;
+                element.removeAttribute('ts-src');
+            }
+        });
+        // --- END OF NEW CODE ---
+        
         return tempDiv.innerHTML;
     }
 
