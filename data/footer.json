@@ -1,11 +1,8 @@
-<footer id=”footer”>
-<ul id=”footerMenu”>
-<li ts-repeat="footerLinks"><a href=”{{url}}”>{{linkName}</a>}</li>
-</ul>
-</footer>
 {
 "footerLinks":[
   {"url":"scope-and-sequence","linkName":"Scope and Sequence"},
-  {"url":"printables","linkName":"Home School Printables"}
+  {"url":"printables","linkName":"Home School Printables"},
+  {"url":"resources","linkName":"Home School Resources"},
+  {"url":"www.facebook.com","linkName":"Community"}
   ]
 }
