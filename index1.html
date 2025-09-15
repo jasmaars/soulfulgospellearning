@@ -7,12 +7,14 @@
 
 <body>
     <div ts-component="hero" data-url="data/home/hero.json"></div>
-    <div ts-component="benefits" collection-url="data/home/benefits.json"></div>
+    <div ts-component="benefits-title" data-url="data/home/benefits.json"></div>
+    <div ts-component="benefits-list" collection-url="data/home/benefits.json"></div>
 
 
 <script>
    ts.registerComponent('hero', 'templates/home/hero.html');
-   ts.registerComponent('benefits', 'templates/home/benefits.html');
+   ts.registerComponent('benefits-list', 'templates/home/benefits-list.html');
+  ts.registerComponent('benefits-title', 'templates/home/benefits-title.html');
 </script>
 </body>
 </html> 
