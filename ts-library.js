@@ -258,8 +258,27 @@
                 // If a collection URL is specified, fetch the collection data.
                 if (collectionUrl) {
                     const collectionData = await ts.gethttpObject(collectionUrl);
+                    let collectionArray;
+                    // Attempt to find the correct array within the fetched data.
+                    // This will check if the data is already an array, or if it's an object
+                    // with an array property that matches the component name (e.g., 'benefits-list' -> 'benefits').
+                    if (Array.isArray(collectionData)) {
+                        collectionArray = collectionData;
+                    } else if (typeof collectionData === 'object' && collectionData !== null) {
+                        const baseName = componentName.replace(/-list$/, '');
+                        if (Array.isArray(collectionData[baseName])) {
+                            collectionArray = collectionData[baseName];
+                        } else {
+                            console.error(`Could not find a valid array for component '${componentName}' at '${collectionUrl}'.`);
+                            continue;
+                        }
+                    } else {
+                        console.error(`Invalid data received from '${collectionUrl}'. Expected an array or object.`);
+                        continue;
+                    }
+
                     let finalHtml = '';
-                    collectionData.forEach(item => {
+                    collectionArray.forEach(item => {
                         let renderedItem = templateHtml;
                         const placeholders = renderedItem.match(/{{([^{}]+)}}/g) || [];
                         placeholders.forEach(placeholder => {
@@ -316,3 +335,4 @@
     // ts.registerComponent('product-list', '/templates/product-card.html');
 
 })(window);
+
