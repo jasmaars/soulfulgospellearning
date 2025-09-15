@@ -1,27 +1,20 @@
 <!DOCTYPE html>
 <html>
+  <head>
 <title>W3.JS</title>
-<script src="https://www.w3schools.com/lib/w3.js"></script>
+<script src="ts-library.js"></script>
+</head>
 
 <body>
+     <div ts-component="header-component"></div>
+   <!--  <div ts-component="blog-post" data-url="/data/post.json"></div>
+      <div ts-component="product-list" collection-url="/data/products.json"></div>-->
 
-<h2>Testing W3.JS in HTML</h2>
 
-<div id="content" w3-include-html="templates/home.html"></div>
 <script>
-  function loadContent() {
- /* w3.getHttpObject("data/home/hero.json", function(myObject) {
-    // Code to use the JSON data
-    w3.displayObject("content", myObject);
-  });*/
-      w3.getHttpObject("data/home/benefits.json", function(myObject) {
-    // Code to use the JSON data
-    w3.displayObject("content", myObject);
-  });
-}
- w3.includeHTML(loadContent);
-
+    ts.registerComponent('hero-component', '/templates/home.html');
+   ts.registerComponent('blog-post', '/templates/post.html');
+   ts.registerComponent('product-list', '/templates/product-card.html');
 </script>
-
 </body>
 </html> 
