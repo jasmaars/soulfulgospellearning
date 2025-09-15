@@ -2,17 +2,17 @@
 <html>
   <head>
 <title>W3.JS</title>
-<script src="soulfulgospellearning/ts-library.js"></script>
+<script src="ts-library.js"></script>
 </head>
 
 <body>
-    <div ts-component="hero" data-url="/data/home/hero.json"></div>
-      <div ts-component="product-list" collection-url="/data/home/benefits.json"></div>
+    <div ts-component="hero" data-url="data/home/hero.json"></div>
+      <div ts-component="product-list" collection-url="data/home/benefits.json"></div>
 
 
 <script>
-   ts.registerComponent('hero', '/templates/home/hero.html');
-   ts.registerComponent('benefits', '/templates/home/benefits.html');
+   ts.registerComponent('hero', 'templates/home/hero.html');
+   ts.registerComponent('benefits', 'templates/home/benefits.html');
 </script>
 </body>
 </html> 
