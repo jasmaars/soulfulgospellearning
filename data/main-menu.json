@@ -1,7 +1,7 @@
 {
   "logoUrl": "images/logo.png",
   "siteName": "My Learning Site",
-  "siteUrl": "/",
+  "siteUrl": "index.html",
   "pages": [
     {
       "pageName": "About",
